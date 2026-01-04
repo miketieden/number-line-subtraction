@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Line Subtraction</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;800&display=swap');
+        
+        body {
+            font-family: 'Lexend', sans-serif;
+            background-color: #f0f9ff;
+            touch-action: manipulation;
+        }
+
+        .number-line-container {
+            position: relative;
+            padding-top: 160px; /* Space for the bumps */
+            padding-bottom: 60px;
+        }
+
+        .number-line {
+            height: 6px;
+            background: #334155;
+            position: relative;
+            border-radius: 3px;
+        }
+
+        #jumps-container {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 100%;
+            height: 0;
+        }
+
+        .jump-big {
+            position: absolute;
+            border: 4px solid #f59e0b;
+            border-bottom: none;
+            border-radius: 50% 50% 0 0;
+            pointer-events: none;
+            animation: bounceIn 0.5s ease-out;
+            transform-origin: bottom;
+        }
+
+        .jump-small {
+            position: absolute;
+            border: 3px solid #3b82f6;
+            border-bottom: none;
+            border-radius: 50% 50% 0 0;
+            pointer-events: none;
+            animation: bounceIn 0.3s ease-out;
+            transform-origin: bottom;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scaleY(0); opacity: 0; }
+            70% { transform: scaleY(1.1); }
+            100% { transform: scaleY(1); opacity: 1; }
+        }
+
+        .label-container {
+            position: absolute;
+            top: 15px; 
+            transform: translateX(-50%);
+            text-align: center;
+            display: flex;
+            flex-direction: column-reverse;
+        }
+
+        .label-input {
+            width: 65px;
+            text-align: center;
+            border: 3px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 6px;
+            font-weight: 800;
+            font-size: 1.1rem;
+            transition: all 0.2s;
+        }
+
+        .label-input:focus {
+            outline: none;
+            border-color: #3b82f6;
+        }
+
+        .label-input.correct {
+            border-color: #22c55e;
+            background-color: #f0fdf4;
+            color: #15803d;
+        }
+
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Modal Styles */
+        #rules-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 50;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl p-6 md:p-10 border-4 border-blue-50">
+        
+        <!-- Top Bar -->
+        <div class="flex justify-between items-start mb-6">
+            <button onclick="toggleRules(true)" class="bg-blue-100 text-blue-700 px-4 py-2 rounded-xl font-bold hover:bg-blue-200 transition-colors">
+                How to Play?
+            </button>
+            <h1 class="text-3xl font-extrabold text-blue-600">Number Line Subtraction</h1>
+            <div class="w-24"></div> <!-- Spacer -->
+        </div>
+
+        <!-- Problem Header -->
+        <div class="text-center mb-8">
+            <p id="problem-text" class="text-2xl text-slate-700 font-bold bg-blue-50 py-4 px-6 rounded-2xl inline-block">Loading problem...</p>
+        </div>
+
+        <!-- Game Area -->
+        <div class="relative bg-slate-50 rounded-3xl p-4 md:p-12 mb-8 min-h-[400px] overflow-hidden border-2 border-slate-100">
+            <!-- The Number Line Wrapper -->
+            <div class="number-line-container">
+                <div class="number-line" id="line">
+                    <div id="jumps-container"></div>
+                </div>
+
+                <!-- Start Label -->
+                <div class="label-container" style="left: 10%;">
+                    <input type="number" id="start-label" class="label-input" placeholder="?">
+                    <p class="text-sm font-bold text-slate-500 mb-2 uppercase tracking-wider">Start</p>
+                </div>
+
+                <!-- End Label -->
+                <div class="label-container" style="left: 90%;">
+                    <input type="number" id="end-label" class="label-input" placeholder="?">
+                    <p class="text-sm font-bold text-slate-500 mb-2 uppercase tracking-wider">Target</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls (Always Active) -->
+        <div class="flex flex-wrap gap-6 justify-center items-center">
+            <div id="action-controls" class="flex gap-4">
+                <button onclick="addJump(10)" class="bg-amber-500 hover:bg-amber-600 text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:shadow-xl transition-all active:scale-95 flex flex-col items-center">
+                    <span class="text-2xl">Jump +10</span>
+                    <span class="text-xs uppercase opacity-90">Big Bump</span>
+                </button>
+                <button onclick="addJump(1)" class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:shadow-xl transition-all active:scale-95 flex flex-col items-center">
+                    <span class="text-2xl">Jump +1</span>
+                    <span class="text-xs uppercase opacity-90">Small Bump</span>
+                </button>
+            </div>
+            
+            <button onclick="clearJumps()" class="bg-slate-200 hover:bg-slate-300 text-slate-700 px-6 py-4 rounded-2xl font-bold transition-colors h-[84px] self-end">
+                Reset Jumps
+            </button>
+        </div>
+
+        <!-- Result Section -->
+        <div id="final-step" class="mt-8 text-center">
+            <hr class="mb-8 border-slate-200">
+            <p class="text-2xl font-black text-slate-800 mb-4">Total distance jumped:</p>
+            <div class="flex justify-center items-center gap-4 mb-6">
+                <input type="number" id="final-answer" class="w-32 text-center text-4xl font-black border-4 border-blue-400 rounded-2xl p-3 focus:ring-4 ring-blue-100 outline-none" placeholder="??">
+                <button onclick="checkAnswer()" class="bg-green-500 hover:bg-green-600 text-white px-10 py-4 rounded-2xl font-black shadow-lg text-xl transition-transform active:scale-95">Check!</button>
+            </div>
+        </div>
+
+        <!-- Success Message -->
+        <div id="success-message" class="hidden mt-8 p-10 bg-green-50 border-4 border-green-200 text-green-800 rounded-3xl text-center shadow-inner">
+            <h2 class="text-4xl font-black mb-2">WOW! 🎉</h2>
+            <p class="text-xl font-medium mb-6">You solved the subtraction problem!</p>
+            <button onclick="initGame()" class="bg-green-600 hover:bg-green-700 text-white px-12 py-4 rounded-2xl font-black text-xl shadow-lg transition-all active:scale-95">Next Problem</button>
+        </div>
+    </div>
+
+    <!-- Rules Modal -->
+    <div id="rules-modal">
+        <div class="bg-white p-8 rounded-3xl max-w-lg w-full shadow-2xl">
+            <h3 class="text-3xl font-black text-blue-600 mb-4">Rules of the Game</h3>
+            <ul class="text-lg text-slate-700 space-y-4 mb-8">
+                <li>1. Label the <strong>Start</strong> and <strong>Target</strong> boxes based on the question.</li>
+                <li>2. Add <strong>Big Bumps</strong> to jump by 10.</li>
+                <li>3. Add <strong>Small Bumps</strong> to jump by 1.</li>
+                <li>4. Count all your bumps to find the total distance!</li>
+            </ul>
+            <button onclick="toggleRules(false)" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-black text-xl hover:bg-blue-700">Got it!</button>
+        </div>
+    </div>
+
+    <script>
+        let currentProblem = { start: 0, end: 0, diff: 0 };
+        let currentPosition = 0;
+        let jumps = [];
+
+        const names = ["Jon", "Bill", "Sarah", "Kim", "Alex", "Sam", "Leo", "Mia", "Ben", "Ava"];
+        
+        function initGame() {
+            currentPosition = 0;
+            jumps = [];
+            
+            document.getElementById('jumps-container').innerHTML = '';
+            document.getElementById('start-label').value = '';
+            document.getElementById('end-label').value = '';
+            document.getElementById('start-label').classList.remove('correct');
+            document.getElementById('end-label').classList.remove('correct');
+            document.getElementById('final-answer').value = '';
+            document.getElementById('final-step').classList.remove('hidden');
+            document.getElementById('success-message').classList.add('hidden');
+
+            const n1 = Math.floor(Math.random() * 30) + 5;
+            const n2 = n1 + (Math.floor(Math.random() * 60) + 15);
+            currentProblem = { start: n1, end: n2, diff: n2 - n1 };
+
+            const name1 = names[Math.floor(Math.random() * names.length)];
+            let name2 = names[Math.floor(Math.random() * names.length)];
+            while(name1 === name2) name2 = names[Math.floor(Math.random() * names.length)];
+
+            document.getElementById('problem-text').innerText = `${name1} is ${n1}, ${name2} is ${n2}. How much older is ${name2}?`;
+
+            currentPosition = n1;
+        }
+
+        function toggleRules(show) {
+            document.getElementById('rules-modal').style.display = show ? 'flex' : 'none';
+        }
+
+        function checkLabels() {
+            const s = parseInt(document.getElementById('start-label').value);
+            const e = parseInt(document.getElementById('end-label').value);
+
+            if (s === currentProblem.start) {
+                document.getElementById('start-label').classList.add('correct');
+            } else {
+                document.getElementById('start-label').classList.remove('correct');
+            }
+            
+            if (e === currentProblem.end) {
+                document.getElementById('end-label').classList.add('correct');
+            } else {
+                document.getElementById('end-label').classList.remove('correct');
+            }
+        }
+
+        document.getElementById('start-label').addEventListener('input', checkLabels);
+        document.getElementById('end-label').addEventListener('input', checkLabels);
+
+        function addJump(value) {
+            const startX = getPercentPos(currentPosition);
+            currentPosition += value;
+            const endX = getPercentPos(currentPosition);
+            
+            jumps.push(value);
+            renderJump(startX, endX, value);
+        }
+
+        function getPercentPos(val) {
+            const range = currentProblem.end - currentProblem.start;
+            const progress = (val - currentProblem.start) / range;
+            return 10 + (progress * 80);
+        }
+
+        function renderJump(x1, x2, val) {
+            const container = document.getElementById('jumps-container');
+            const jump = document.createElement('div');
+            const width = Math.max(x2 - x1, 2); 
+            const height = val === 10 ? 100 : 50;
+            
+            jump.className = val === 10 ? 'jump-big' : 'jump-small';
+            jump.style.left = `${x1}%`;
+            jump.style.width = `${width}%`;
+            jump.style.height = `${height}px`;
+            jump.style.bottom = `0px`; 
+
+            container.appendChild(jump);
+        }
+
+        function clearJumps() {
+            currentPosition = currentProblem.start;
+            jumps = [];
+            document.getElementById('jumps-container').innerHTML = '';
+        }
+
+        function checkAnswer() {
+            const ans = parseInt(document.getElementById('final-answer').value);
+            const s = parseInt(document.getElementById('start-label').value);
+            const e = parseInt(document.getElementById('end-label').value);
+
+            if (s !== currentProblem.start || e !== currentProblem.end) {
+                alert("Make sure your Start and Target labels are correct first!");
+                return;
+            }
+
+            if (ans === currentProblem.diff) {
+                document.getElementById('success-message').classList.remove('hidden');
+                document.getElementById('final-step').classList.add('hidden');
+            } else {
+                const input = document.getElementById('final-answer');
+                input.classList.add('border-red-500', 'bg-red-50');
+                setTimeout(() => {
+                    input.classList.remove('border-red-500', 'bg-red-50');
+                }, 1000);
+            }
+        }
+
+        window.onload = initGame;
+    </script>
+</body>
+</html>
